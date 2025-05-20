@@ -1,103 +1,225 @@
-import Image from "next/image";
+"use client";
+
+import { useId, useState } from "react";
+import { CreditCardIcon } from "lucide-react";
+import { usePaymentInputs } from "react-payment-inputs";
+import images, { type CardImages } from "react-payment-inputs/images";
+import { useRouter } from "next/navigation";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { initializeSafepayPayment, constructCheckoutUrl } from "@/lib/safepay"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const id = useId();
+  const [amount, setAmount] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  
+  const {
+    meta,
+    getCardNumberProps,
+    getExpiryDateProps,
+    getCVCProps,
+    getCardImageProps,
+  } = usePaymentInputs();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handlePayment = async () => {
+    try {
+      setError("");
+      setIsLoading(true);
+      
+      const amountValue = parseFloat(amount);
+      if (isNaN(amountValue) || amountValue <= 0) {
+        throw new Error("Please enter a valid amount");
+      }
+
+      // Generate orderId ONCE
+      const orderId = `ORDER_${Date.now()}`;
+
+      // Pass orderId to the API call
+      const tracker = await initializeSafepayPayment(amountValue, orderId);
+      
+      // Use the same orderId in the checkout URL
+      const baseUrl = process.env.NODE_ENV === 'development' ? window.location.origin : 'https://your-vercel-app-url.com';
+      const successUrl = `${baseUrl}/payment/success`;
+      const cancelUrl = `${baseUrl}/payment/cancel`;
+      const checkoutUrl = constructCheckoutUrl(orderId, tracker, successUrl, cancelUrl);
+      
+      // Redirect to Safepay checkout
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error("Payment initialization failed:", error);
+      setError(error instanceof Error ? error.message : "Failed to initialize payment. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col justify-center items-center container h-full min-h-screen w-full min-w-full">
+      <div className="flex flex-col gap-2">
+        <div className="*:not-first:mt-2">
+          <legend className="text-foreground text-sm font-medium">
+            Amount (PKR)
+          </legend>
+          <Input
+            className="shadow-none [direction:inherit]"
+            id={`amount-${id}`}
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Enter amount"
+            min="1"
+            step="0.01"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div className="*:not-first:mt-2">
+          <legend className="text-foreground text-sm font-medium">
+            Card Details
+          </legend>
+          <div className="rounded-md shadow-xs">
+            <div className="relative focus-within:z-10">
+              <Input
+                className="peer rounded-b-none pe-9 shadow-none [direction:inherit]"
+                {...getCardNumberProps()}
+                id={`number-${id}`}
+              />
+              <div className="text-muted-foreground/80 pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50">
+                {meta.cardType ? (
+                  <svg
+                    className="overflow-hidden rounded-sm"
+                    {...getCardImageProps({
+                      images: images as unknown as CardImages,
+                    })}
+                    width={20}
+                  />
+                ) : (
+                  <CreditCardIcon size={16} aria-hidden="true" />
+                )}
+              </div>
+            </div>
+            <div className="-mt-px flex">
+              <div className="min-w-0 flex-1 focus-within:z-10">
+                <Input
+                  className="rounded-e-none rounded-t-none shadow-none [direction:inherit]"
+                  {...getExpiryDateProps()}
+                  id={`expiry-${id}`}
+                />
+              </div>
+              <div className="-ms-px min-w-0 flex-1 focus-within:z-10">
+                <Input
+                  className="rounded-s-none rounded-t-none shadow-none [direction:inherit]"
+                  {...getCVCProps()}
+                  id={`cvc-${id}`}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        {error && (
+          <p className="text-red-500 text-sm mt-2">{error}</p>
+        )}
+        <Button 
+          className="mt-4" 
+          onClick={handlePayment}
+          disabled={isLoading || !amount}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {isLoading ? "Processing..." : "Proceed to pay"}
+        </Button>
+      </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+
+// import { useId } from "react";
+// import { CreditCardIcon } from "lucide-react";
+// import { usePaymentInputs } from "react-payment-inputs";
+// import images, { type CardImages } from "react-payment-inputs/images";
+
+// import { Input } from "@/components/ui/input";
+// import { Button } from "@/components/ui/button";
+
+// export default function Home() {
+//   const id = useId();
+//   const {
+//     meta,
+//     getCardNumberProps,
+//     getExpiryDateProps,
+//     getCVCProps,
+//     getCardImageProps,
+//   } = usePaymentInputs();
+//   return (
+//     <div className="flex flex-col justify-center items-center container h-full min-h-screen w-full min-w-full">
+//       <div className="flex flex-col gap-2">
+//         <div className="*:not-first:mt-2">
+//           <legend className="text-foreground text-sm font-medium">
+//             Amount
+//           </legend>
+//           <Input
+//             className="shadow-none [direction:inherit]"
+//             id={`anount-${id}`}
+//             type="number"
+//           />
+//         </div>
+//         <div className="*:not-first:mt-2">
+//           <legend className="text-foreground text-sm font-medium">
+//             Card Details
+//           </legend>
+//           <div className="rounded-md shadow-xs">
+//             <div className="relative focus-within:z-10">
+//               <Input
+//                 className="peer rounded-b-none pe-9 shadow-none [direction:inherit]"
+//                 {...getCardNumberProps()}
+//                 id={`number-${id}`}
+//               />
+//               <div className="text-muted-foreground/80 pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50">
+//                 {meta.cardType ? (
+//                   <svg
+//                     className="overflow-hidden rounded-sm"
+//                     {...getCardImageProps({
+//                       images: images as unknown as CardImages,
+//                     })}
+//                     width={20}
+//                   />
+//                 ) : (
+//                   <CreditCardIcon size={16} aria-hidden="true" />
+//                 )}
+//               </div>
+//             </div>
+//             <div className="-mt-px flex">
+//               <div className="min-w-0 flex-1 focus-within:z-10">
+//                 <Input
+//                   className="rounded-e-none rounded-t-none shadow-none [direction:inherit]"
+//                   {...getExpiryDateProps()}
+//                   id={`expiry-${id}`}
+//                 />
+//               </div>
+//               <div className="-ms-px min-w-0 flex-1 focus-within:z-10">
+//                 <Input
+//                   className="rounded-s-none rounded-t-none shadow-none [direction:inherit]"
+//                   {...getCVCProps()}
+//                   id={`cvc-${id}`}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//         <Button className="mt-4">Proceed to pay</Button>
+//       </div>
+//     </div>
+//   );
+// }
