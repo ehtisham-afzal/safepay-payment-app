@@ -13,7 +13,7 @@ export const SAFEPAY_CONFIG = {
     },
   };
 
-  export const BaseUrl = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_BASE_URL : process.env.VERCEL_URL;
+  export const BaseUrl = process.env.NEXT_PUBLIC_BASE_URL
   
   export const isSandbox = process.env.NEXT_PUBLIC_SAFEPAY_ENVIRONMENT === "sandbox";
   
