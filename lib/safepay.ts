@@ -18,8 +18,7 @@ interface SafepayInitResponse {
     conversion_rate: number;
   };
   status: {
-    // @ts-ignore
-    errors: any[];
+    errors: Error[];
     message: string;
   };
 }
@@ -30,34 +29,38 @@ export const initializeSafepayPayment = async (
   currency: string = "PKR"
 ): Promise<string> => {
   const config = getSafepayConfig();
-  
+
   const response = await fetch(`${config.API_URL}/order/v1/init`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Bearer ${config.API_KEY}`
+      Accept: "application/json",
+      Authorization: `Bearer ${config.API_KEY}`,
     },
     body: JSON.stringify({
       client: config.API_KEY,
       amount: amount * 100, // Convert to smallest currency unit (paise for PKR)
       currency: currency,
-      environment: config.API_URL.includes("sandbox") ? "sandbox" : "production",
+      environment: config.API_URL.includes("sandbox")
+        ? "sandbox"
+        : "production",
       source: "nextjs",
       order_id: orderId,
       redirect_url: `${BaseUrl}/payment/success`,
-      cancel_url: `${BaseUrl}/payment/cancel`
+      cancel_url: `${BaseUrl}/payment/cancel`,
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     console.error("Safepay API Error:", errorData);
-    throw new Error(`Failed to initialize Safepay payment: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to initialize Safepay payment: ${response.status} ${response.statusText}`
+    );
   }
 
   const data: SafepayInitResponse = await response.json();
-  
+
   if (data.status.message !== "success") {
     throw new Error("Failed to initialize Safepay payment");
   }
@@ -72,7 +75,7 @@ export const constructCheckoutUrl = (
   cancelUrl: string
 ): string => {
   const config = getSafepayConfig();
-  
+
   const params = new URLSearchParams({
     env: config.API_URL.includes("sandbox") ? "sandbox" : "production",
     beacon: tracker,
@@ -85,12 +88,15 @@ export const constructCheckoutUrl = (
   return `${config.CHECKOUT_URL}?${params.toString()}`;
 };
 
-export const validateSignature = (tracker: string, signature: string): boolean => {
+export const validateSignature = (
+  tracker: string,
+  signature: string
+): boolean => {
   const config = getSafepayConfig();
   const calculatedSignature = crypto
     .createHmac("sha256", config.SECRET_KEY)
     .update(tracker)
     .digest("hex");
-  
+
   return calculatedSignature === signature;
-}; 
+};
