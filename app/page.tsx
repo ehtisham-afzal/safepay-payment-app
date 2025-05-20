@@ -4,15 +4,13 @@ import { useId, useState } from "react";
 import { CreditCardIcon } from "lucide-react";
 import { usePaymentInputs } from "react-payment-inputs";
 import images, { type CardImages } from "react-payment-inputs/images";
-import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { initializeSafepayPayment, constructCheckoutUrl } from "@/lib/safepay"
-import { BaseUrl, SAFEPAY_CONFIG } from "@/lib/safepay-config";
+import { initializeSafepayPayment, constructCheckoutUrl } from "@/lib/safepay";
+import { BaseUrl } from "@/lib/safepay-config";
 
 export default function Home() {
-  const router = useRouter();
   const id = useId();
   const [amount, setAmount] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);

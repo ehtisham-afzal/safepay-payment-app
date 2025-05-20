@@ -18,6 +18,7 @@ interface SafepayInitResponse {
     conversion_rate: number;
   };
   status: {
+    // @ts-ignore
     errors: any[];
     message: string;
   };
