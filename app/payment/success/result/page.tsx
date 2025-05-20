@@ -1,9 +1,10 @@
 "use client";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { validateSignature } from "@/lib/safepay";
 import { Button } from "@/components/ui/button";
 
-export default function PaymentSuccessResult() {
+function PaymentSuccessResultContent() {
   const searchParams = useSearchParams();
   const tracker = searchParams.get("tracker");
   const signature = searchParams.get("signature");
@@ -31,5 +32,19 @@ export default function PaymentSuccessResult() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessResult() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <h1 className="text-2xl font-bold">Loading...</h1>
+        </div>
+      </div>
+    }>
+      <PaymentSuccessResultContent />
+    </Suspense>
   );
 }
