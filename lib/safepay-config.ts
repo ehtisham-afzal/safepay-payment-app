@@ -12,6 +12,8 @@ export const SAFEPAY_CONFIG = {
       SECRET_KEY: process.env.SAFEPAY_SANDBOX_SECRET_KEY || "",
     },
   };
+
+  export const BaseUrl = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_BASE_URL : process.env.VERCEL_URL;
   
   export const isSandbox = process.env.NEXT_PUBLIC_SAFEPAY_ENVIRONMENT === "sandbox";
   

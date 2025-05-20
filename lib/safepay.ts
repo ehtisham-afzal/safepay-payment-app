@@ -1,4 +1,4 @@
-import { getSafepayConfig } from "./safepay-config";
+import { BaseUrl, getSafepayConfig } from "./safepay-config";
 import crypto from "crypto";
 
 interface SafepayInitResponse {
@@ -44,8 +44,8 @@ export const initializeSafepayPayment = async (
       environment: config.API_URL.includes("sandbox") ? "sandbox" : "production",
       source: "nextjs",
       order_id: orderId,
-      redirect_url: `${window.location.origin}/payment/success`,
-      cancel_url: `${window.location.origin}/payment/cancel`
+      redirect_url: `${BaseUrl}/payment/success`,
+      cancel_url: `${BaseUrl}/payment/cancel`
     }),
   });
 

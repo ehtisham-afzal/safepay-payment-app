@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { initializeSafepayPayment, constructCheckoutUrl } from "@/lib/safepay"
+import { BaseUrl, SAFEPAY_CONFIG } from "@/lib/safepay-config";
 
 export default function Home() {
   const router = useRouter();
@@ -42,9 +43,8 @@ export default function Home() {
       const tracker = await initializeSafepayPayment(amountValue, orderId);
       
       // Use the same orderId in the checkout URL
-      const baseUrl = process.env.NODE_ENV === 'development' ? window.location.origin : 'https://your-vercel-app-url.com';
-      const successUrl = `${baseUrl}/payment/success`;
-      const cancelUrl = `${baseUrl}/payment/cancel`;
+      const successUrl = `${BaseUrl}/payment/success`;
+      const cancelUrl = `${BaseUrl}/payment/cancel`;
       const checkoutUrl = constructCheckoutUrl(orderId, tracker, successUrl, cancelUrl);
       
       // Redirect to Safepay checkout
